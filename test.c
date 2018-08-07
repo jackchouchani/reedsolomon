@@ -25,102 +25,31 @@ int main()
 	char my_msg[BUFFER_SIZE];
 	
 	fgets( my_msg, sizeof(my_msg), stdin );
-	//gets(my_msg);
-	//strcpy(my_msg, "Hello world");
+
 	for (size_t i = 0; i < strlen(my_msg); i++) {
 		msg_in->array[i] = (int)my_msg[i];
 		insertArray(msg_in);
 	}
-	
-	
+
+
 	printf("Msg in: [");
 	for (size_t i = 0; i < msg_in->used; i++) {
 		printf("%u,",msg_in->array[i]);
 	}
 	printf("]\n");
-	
-	//	initArray(msg_in, 100);
-	//	msg_in->array[0] = 0x40;
-	//	msg_in->array[1] = 0xd2;
-	//	msg_in->array[2] = 0x75;
-	//	msg_in->array[3] = 0x47;
-	//	msg_in->array[4] = 0x76;
-	//	msg_in->array[5] = 0x17;
-	//	msg_in->array[6] = 0x32;
-	//	msg_in->array[7] = 0x06;
-	//	msg_in->array[8] = 0x27;
-	//	msg_in->array[9] = 0x26;
-	//	msg_in->array[10] = 0x96;
-	//	msg_in->array[11] = 0xc6;
-	//	msg_in->array[12] = 0xc6;
-	//	msg_in->array[13] = 0x96;
-	//	msg_in->array[14] = 0x70;
-	//	msg_in->array[15] = 0xec;
-	//	msg_in->used = 16;
-	
+
 	struct Array *msg = malloc(sizeof(struct Array));
 	initArray(msg, 170);
-	
+
 	struct Array *err_loc = malloc(sizeof(struct Array));
-	
+
 	struct Array *synd = malloc(sizeof(struct Array));
-	
+
 	struct Array *pos = malloc(sizeof(struct Array));
-	
+
 	struct Array *rev_pos = malloc(sizeof(struct Array));
-	
+
 	msg = rs_encode_msg(msg_in, 14, gf_table);
-	
-	/*msg->array[0] = 64;
-	 msg->array[1] = 166;
-	 msg->array[2] = 134;
-	 msg->array[3] = 86;
-	 msg->array[4] = 140;
-	 msg->array[5] = 140;
-	 msg->array[6] = 247;
-	 msg->array[7] = 118;
-	 msg->array[8] = 247;
-	 msg->array[9] = 38;
-	 msg->array[10] = 198;
-	 msg->array[11] = 64;
-	 msg->array[12] = 236;
-	 msg->array[13] = 17;
-	 msg->array[14] = 236;
-	 msg->array[15] = 17;
-	 msg->array[16] = 236;
-	 msg->array[17] = 17;
-	 msg->array[18] = 236;
-	 msg->array[19] = 134;
-	 msg->array[20] = 160;
-	 msg->array[21] = 87;
-	 msg->array[22] = 135;
-	 msg->array[23] = 22;
-	 msg->array[24] = 250;
-	 msg->array[25] = 219;
-	 msg->array[26] = 76;
-	 msg->array[27] = 123;
-	 msg->array[28] = 7;
-	 msg->used = 29;*/
-	
-	/*msg->array[0] = 99;
-	 msg->array[1] = 111;
-	 msg->array[2] = 117;
-	 msg->array[3] = 99;
-	 msg->array[4] = 111;
-	 msg->array[5] = 117;
-	 msg->array[6] = 10;
-	 msg->array[7] = 18;
-	 msg->array[8] = 86;
-	 msg->array[9] = 219;
-	 msg->array[10] = 215;
-	 msg->array[11] = 177;
-	 msg->array[12] = 99;
-	 msg->array[13] = 22;
-	 msg->array[14] = 137;
-	 msg->array[15] = 41;
-	 msg->array[16] = 38;
-	 msg->array[17] = 236;
-	 msg->used = 18;*/
 	
 	printf("Msg Encoded: [");
 	for (size_t i = 0; i < msg->used; i++) {
@@ -181,7 +110,6 @@ int main()
 	initArray(err_pos, 3);
 	err_pos->array[0] = 0;
 	
-	//msg = rs_correct_errdata(msg, synd, pos, gf_table);
 	msg = rs_correct_msg(msg, 14, err_pos, gf_table);
 	
 	printf("Msg Corrected: [");
@@ -195,5 +123,13 @@ int main()
 		printf("%c",msg->array[i]);
 	}
 	printf("\n");
+	freeArray(gf_table->gf_exp);
+	freeArray(gf_table->gf_log);
+	freeArray(msg_in);
+	freeArray(msg);
+	freeArray(synd);
+	freeArray(pos);
+	freeArray(rev_pos);
+
 	return 0;
 }

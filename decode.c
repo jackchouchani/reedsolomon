@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #include "Headers/array.h"
 #include "Headers/op.h"
 
@@ -13,9 +12,11 @@
 struct Array* rs_calc_syndromes(struct Array *msg, uint8_t nsym, struct gf_tables *gf_table)
 {
 	struct Array *synd = malloc(sizeof(struct Array));
-	initZArray(synd, nsym+1);
 	struct Array *res = malloc(sizeof(struct Array));
+
+	initZArray(synd, nsym+1);
 	initZArray(res, nsym+2);
+	
 	for(uint8_t i = 0; i < nsym; i++){
 		synd->array[i] = gf_poly_eval(msg, gf_pow(2, i, gf_table), gf_table);
 		insertArray(synd);
@@ -26,6 +27,7 @@ struct Array* rs_calc_syndromes(struct Array *msg, uint8_t nsym, struct gf_table
 		insertArray(res);
 	}
 	//(else we can end up with weird calculations sometimes)
+	freeArray(synd);
 	return res;
 }
 
@@ -39,6 +41,7 @@ bool rs_check(struct Array *msg, uint8_t nsym, struct gf_tables *gf_table)
 	bool res = true;
 	for(uint8_t i = 0; i < nsym+1; i++)
 		res &= synd->array[i] == 0;
+	freeArray(synd);
 	return res;
 }
 
@@ -62,7 +65,9 @@ struct Array* rs_find_errdata_locator(struct Array *e_pos, struct gf_tables *gf_
 		insertArray(arr);
 		struct Array *add = gf_poly_add(one, arr);
 		e_loc = gf_poly_mul(e_loc, add, gf_table);
+		freeArray(arr);
 	}
+	freeArray(one);
 	return e_loc;
 }
 
@@ -83,37 +88,42 @@ struct Array* rs_find_error_evaluator(struct Array *synd, struct Array *err_loc,
 struct Array* rs_correct_errdata(struct Array *msg_in, struct Array *synd, struct Array *err_pos, struct gf_tables *gf_table)
 {
 	size_t len = msg_in->size;
+
 	struct Array *coef_pos = malloc(sizeof(struct Array));
+	struct Array *err_loc = malloc(sizeof(struct Array));
+	struct Array *rev_synd = reverse_arr(synd);
+	struct Array *err_eval = malloc(sizeof(struct Array));
+	struct Array *X = malloc(sizeof(struct Array));
+	struct Array *E = malloc(sizeof(struct Array));
+
 	initArray(coef_pos, err_pos->used+1);
+	
 	for(size_t i = 0; i < err_pos->used; i++){
 		coef_pos->array[i] = len - 1 - err_pos->array[i];
 		insertArray(coef_pos);
 	}
-	
-	struct Array *err_loc = malloc(sizeof(struct Array));
-	initArray(err_loc, coef_pos->used+1);
+
+	initZArray(E, len);
+
+	initArray(err_loc, coef_pos->used+1);	
 	err_loc= rs_find_errdata_locator(coef_pos, gf_table);
 	
-	struct Array *rev_synd = reverse_arr(synd);
-	struct Array *err_eval = malloc(sizeof(struct Array));
 	uint8_t nsym = err_loc->used - 1;
 	err_eval = rs_find_error_evaluator(rev_synd, err_loc, nsym, gf_table);
 	err_eval = reverse_arr(err_eval);
-	
-	struct Array *X = malloc(sizeof(struct Array));
 	initArray(X, coef_pos->used);
+	
 	for(size_t t = 0; t < coef_pos->used; t++){
 		uint8_t q = coef_pos->array[t];
 		X->array[t] = gf_pow(2, q, gf_table);
 		insertArray(X);
 	}
 	
-	struct Array *E = malloc(sizeof(struct Array));
-	initZArray(E, len);
 	E->used = len;
 	for(size_t i = 0; i < X->used; i++){
-		uint8_t Xi_inv = gf_inverse(X->array[i], gf_table);
 		struct Array *err_loc_prime_tmp = malloc(sizeof(struct Array));
+		uint8_t Xi_inv = gf_inverse(X->array[i], gf_table);
+		
 		initArray(err_loc_prime_tmp, X->used+1);
 		for(size_t j = 0; j < X->used; j++){
 			if(j != i){
@@ -121,18 +131,21 @@ struct Array* rs_correct_errdata(struct Array *msg_in, struct Array *synd, struc
 				insertArray(err_loc_prime_tmp);
 			}
 		}
-		
 		uint8_t err_loc_prime = 1;
 		for(size_t k = 0; k < err_loc_prime_tmp->used; k++)
 			err_loc_prime = gf_mul(err_loc_prime, err_loc_prime_tmp->array[k], gf_table);
 		
-		//err_eval = reverse_arr(err_eval);
 		uint8_t y = gf_poly_eval(reverse_arr(err_eval), Xi_inv, gf_table);
 		y = gf_mul(gf_pow(X->array[i], 1, gf_table), y, gf_table);
 		uint8_t magnitude = gf_div(y, err_loc_prime, gf_table);
 		E->array[err_pos->array[i]] = magnitude;
+		freeArray(err_loc_prime_tmp);
 	}
 	msg_in = gf_poly_add(msg_in, E);
+	freeArray(coef_pos);
+	freeArray(err_loc);
+	freeArray(rev_synd);
+	freeArray(err_eval);
 	return msg_in;
 }
 
@@ -147,12 +160,12 @@ struct Array* rs_find_error_locator(struct Array* synd, uint8_t nsym, uint8_t er
 	old_loc->array[0] = 1;
 	insertArray(old_loc);
 	
-	unsigned int synd_shift = 0;
+	size_t synd_shift = 0;
 	if(synd->used > nsym)
 		synd_shift = synd->used - nsym;
 	
 	for(int i = 0; i < nsym-erase_count;i++){
-		int K = i + synd_shift;
+		size_t K = i + synd_shift;
 		uint8_t delta = synd->array[K];
 		for(size_t j = 1 ; j < err_loc->used; j++){
 			delta ^= gf_mul(err_loc->array[err_loc->used - (j+1)], synd->array[K - j], gf_table);
@@ -179,6 +192,7 @@ struct Array* rs_find_error_locator(struct Array* synd, uint8_t nsym, uint8_t er
 		fprintf(stderr, "Too many errors to correct");
 		exit(EXIT_FAILURE);
 	}
+	freeArray(old_loc);
 	return err_loc;
 }
 
@@ -218,6 +232,7 @@ struct Array* rs_forney_syndromes(struct Array *synd, struct Array *pos, uint8_t
 		for (size_t j = 0; j < fsynd->used - 1; j++)
 			fsynd->array[j] = gf_mul(fsynd->array[j], x, gf_table) ^ fsynd->array[j + 1];
 	}
+	freeArray(erase_pos_reversed);
 	return fsynd;
 }
 
@@ -258,5 +273,8 @@ struct Array* rs_correct_msg(struct Array *msg_in, uint8_t nsym, struct Array *e
 		fprintf(stderr, "Could not correct message");
 		exit(EXIT_FAILURE);
 	}
+	freeArray(synd);
+	freeArray(err_loc);
+	freeArray(err_pos);
 	return msg_out;
 }

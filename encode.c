@@ -52,8 +52,8 @@ struct Array* rs_encode_msg(struct Array* msg_in, uint8_t nsym, struct gf_tables
     }
   }
   msg_out->used = gen->used + msg_in->used-1;
-  //struct Tuple *res = malloc(sizeof(struct Tuple));
-  //res =  gf_poly_div(msg_in, gen, gf_table);
+
   memmove(msg_out->array, msg_in->array, msg_in->used);
+  freeArray(gen);
   return msg_out;
 }

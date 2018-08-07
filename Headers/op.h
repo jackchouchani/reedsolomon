@@ -20,7 +20,7 @@ struct Tuple {
   struct Array *y;
 };
 
-struct gf_tables* init_tables();
+struct gf_tables* init_tables(void);
 
 struct Array* merge(struct Array *l1, struct Array *l2);
 

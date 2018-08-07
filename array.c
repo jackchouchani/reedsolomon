@@ -1,49 +1,62 @@
 #include "Headers/array.h"
 
-void initArray(struct Array *a, size_t initialSize)
+//Initialize an empty array
+void initArray(struct Array *A, size_t initialSize)
 {
-  a->array = malloc(sizeof(uint8_t) * initialSize);
-  if(a->array == NULL){
-    free(a);
+  A->array = malloc(sizeof(uint8_t) * initialSize);
+  if(A->array == NULL){
+    freeArray(A);
   }
-  a->used = 0;
-  a->size = initialSize;
+  A->used = 0;
+  A->size = initialSize;
 }
 
-void initZArray(struct Array *a, size_t initialSize)
+//Initialize array filled with zeroes
+void initZArray(struct Array *A, size_t initialSize)
 {
-  a->array = calloc(initialSize, sizeof(uint8_t));
-  if(a->array == NULL){
-    free(a);
+  A->array = calloc(initialSize, sizeof(uint8_t));
+  if(A->array == NULL){
+    freeArray(A);
   }
-  a->used = 0;
-  a->size = initialSize;
+  A->used = 0;
+  A->size = initialSize;
 }
 
-void insertArray(struct Array *a)
+//Increment the size of the array by one and double the size if in need
+void insertArray(struct Array *A)
 {
-  if(a->used == a->size)
+  if(A->used == A->size)
     {
-      a->size *= 2;
-      void *p = realloc(a->array, a->size * sizeof(uint8_t));
+      A->size *= 2;
+      void *p = realloc(A->array, A->size * sizeof(uint8_t));
       if(p != NULL)
-        a->array = p;
+        A->array = p;
       else
         exit(EXIT_FAILURE);
     }
-  a->used++;
+  A->used++;
 }
 
-void deleteArray(struct Array *a)
+//Decrement the size of the array by one
+void deleteArray(struct Array *A)
 {
-  a->used--;
+  if(A->used-- == A->size >> 2){
+    A->size >>= 2;
+    void *p = realloc(A->array, A->size * sizeof(uint8_t));
+    if(p != NULL)
+      A->array = p;
+    else
+      exit(EXIT_FAILURE);
+  }
+  A->used++;
+
 }
 
-
-void freeArray(struct Array *a)
+//Frees the array
+void freeArray(struct Array *A)
 {
-  free(a->array);
-  a->array = NULL;
-  a->used = 0;
-  a->size = 0;
+  A->array = NULL;
+  A->used = 0;
+  A->size = 0;
+  free(A->array);
 }
