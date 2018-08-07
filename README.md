@@ -5,7 +5,7 @@ This is an adaptation of [Reed–Solomon codes for coders](https://en.wikiversit
 
 Everything is included in the repository. I included a test file in case someone needs an example.
 
-```C
+```
   git clone https://github.com/jackchouchani/reedsolomon.git
   cd reedsolomon
   make
